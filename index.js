@@ -23,9 +23,6 @@ const { User } = require("./model/User");
 const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 const path = require("path");
 const { Order } = require("./model/Order");
-const favicon = require("serve-favicon");
-
-console.log(process.env);
 
 // Webhook
 // TODO: we will capture actual order after deploying out server live on public URL
@@ -35,10 +32,11 @@ const endpointSecret = process.env.ENDPOINT_SECRET;
 server.post(
   "/webhook",
   express.raw({ type: "application/json" }),
-  async (request, response) => {
+  (request, response) => {
     const sig = request.headers["stripe-signature"];
 
     let event;
+
     try {
       event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
     } catch (err) {
@@ -48,31 +46,21 @@ server.post(
 
     // Handle the event
     switch (event.type) {
-      case "payment_intent.created":
-        // Handle the payment_intent.created event
-        console.log("Payment Intent Created:", event.data.object);
-        // You can perform any necessary actions for payment_intent.created here
-        break;
-
       case "payment_intent.succeeded":
-        // Handle the payment_intent.succeeded event
         const paymentIntentSucceeded = event.data.object;
-        const order = await Order.findById(
-          paymentIntentSucceeded.metadata.orderId
-        );
-        order.paymentStatus = "received";
-        await order.save();
+        console.log({ paymentIntentSucceeded });
+        // Then define and call a function to handle the event payment_intent.succeeded
         break;
-
-      // Add other cases for different event types as needed
-
+      // ... handle other event types
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
+
     // Return a 200 response to acknowledge receipt of the event
     response.send();
   }
 );
+
 // JWT options
 const opts = {};
 opts.jwtFromRequest = cookieExtractor;
